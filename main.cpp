@@ -34,6 +34,8 @@
 
 #include <stdlib.h>
 #include <iomanip>
+#include<fstream>
+#include<sstream>
 #ifdef HAVE_CLASS
 #include "class.h"
 #undef MAX			// due to macro collision this has to be done BEFORE including LATfield2 headers!
@@ -58,8 +60,9 @@
 #include "tools.hpp"
 #include "output.hpp"
 #include "hibernation.hpp"
-
 using namespace std;
+std::ifstream file;
+
 
 using namespace LATfield2;
 
@@ -455,6 +458,8 @@ int main(int argc, char **argv)
 // writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
 
 // writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+
+//INITIAL CONDITION
 for (x.first(); x.test(); x.next())
   {
     zeta_half(x)=0.;
@@ -462,10 +467,68 @@ for (x.first(); x.test(); x.next())
     //\Phi(n-1) = \Phi(old) and \Phi(n) which will be updated in this loops
     // Just note that in the first 2-3 steps it does not work since we
   }
-  check_field(  pi_k, Hconf(a, fourpiG, cosmo) , " H pi_k", numpts3d);
-  check_field( zeta_half, 1. , "zeta", numpts3d);
-  check_field( phi , 1. , "Phi", numpts3d);
+  // check_field(  pi_k, Hconf(a, fourpiG, cosmo) , " H pi_k", numpts3d);
 
+  //FOR TEST:
+  // dtau = sim.steplimit;
+  //****************************
+  //****SAVE DATA
+  //****************************
+  FILE* Result_avg;
+  FILE* Result_real;
+  FILE* Result_fourier;
+
+  char filename_avg[60];
+  char filename_real[60];
+  char filename_fourier[60];
+
+
+  snprintf(filename_avg, sizeof(filename_avg),"./output/Result_avg.txt");
+  snprintf(filename_real, sizeof(filename_real),"./output/Result_real.txt");
+  snprintf(filename_fourier, sizeof(filename_fourier),"./output/Result_fourier.txt");
+
+  // ofstream out(filename_avg,ios::out);
+  ofstream out_avg(filename_avg,ios::out);
+  ofstream out_real(filename_real,ios::out);
+  ofstream out_fourier(filename_fourier,ios::out);
+
+
+  Result_avg=fopen(filename_avg,"w");
+  Result_real=fopen(filename_real,"w");
+  Result_fourier=fopen(filename_fourier,"w");
+
+
+  out_avg<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
+  out_avg<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
+  out_avg<<"### initial time = "<< tau <<endl;
+  out_avg<<"### 1- tau\t2- average(H pi_k)\t3- average (zeta)\t 4- average (phi)   " <<endl;
+
+
+  out_real<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
+  out_real<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
+  out_real<<"### initial time = "<< tau <<endl;
+  out_real<<"### 1- tau\t2- pi_k(x)\t3-zeta(x)\t 4-x" <<endl;
+
+
+  out_fourier<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
+  out_fourier<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
+  out_fourier<<"### initial time = "<< tau <<endl;
+  out_fourier<<"### 1- tau\t 2- pi_k(k)\t\t3-zeta(k)\t\t4-|k|\t\t 5-vec{k} \t 6-|k|^2"<<endl;
+
+//defining the average
+double avg_pi = 0.;
+double avg_zeta = 0.;
+double avg_phi = 0.;
+
+int norm_kFT_squared = 0.;
+
+
+
+
+
+//****************************
+//****END INFO PRINTING
+//****************************
 	while (true)    // main loop
 	{
 
@@ -476,7 +539,62 @@ for (x.first(); x.test(); x.next())
       // Just note that in the first 2-3 steps it does not work since we
 			phi_old(x) =phi(x);
 			chi_old(x) =chi(x);
+
+       // if(x.coord(0)==32 && x.coord(1)==12 && x.coord(2)==32) cout<<"zeta_half: "<<zeta_half(x)<<endl;
 		}
+
+
+
+    //****************************
+    //****PRINTING AVERAGE OVER TIME
+    //****************************
+    // check_field(  zeta_half, 1. , " H pi_k", numpts3d);
+    avg_pi =average(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+    avg_zeta =average(  zeta_half,1., numpts3d ) ;
+    avg_phi =average(  phi , 1., numpts3d ) ;
+
+
+    COUT << scientific << setprecision(8);
+    // if(parallel.isRoot())
+    // {
+      // fprintf(Result_avg,"\n %20.20e %20.20e ", tau, avg ) ;
+    out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_phi<<endl;
+
+    // }
+
+
+
+    //****************************
+    //****PRINTING REAL SPACE INFO
+    //****************************
+    for (x.first(); x.test(); x.next())
+  	{
+        //NL_test, Printing out average
+      if(x.coord(0)==32 && x.coord(1)==32 && x.coord(2)==32)
+      {
+        // if(parallel.isRoot())
+        // {
+        out_real<<setw(9) << tau <<"\t"<< setw(9) <<pi_k (x)<<"\t"<< setw(9)<<zeta_half (x)<<"\t"<<x<<endl;
+        // }
+      }
+  	}
+
+    //****************************
+    //FOURIER PRINTING
+    //****************************
+    for(kFT.first();kFT.test();kFT.next())
+    {
+      norm_kFT_squared= kFT.coord(0)*kFT.coord(0) + kFT.coord(1) * kFT.coord(1) + kFT.coord(2) * kFT.coord(2);
+      if(norm_kFT_squared == 1)
+      {
+        out_fourier<<setw(9) << tau <<"\t"<< setw(9) << scalarFT_pi(kFT)<<"\t"<< setw(9)<<scalarFT_zeta_half (kFT)<<"\t"<<kFT<<"\t"<<norm_kFT_squared<<endl;
+      }
+    }
+
+
+    //**********************
+    //END ADDED************
+    //**********************
 
 #ifdef BENCHMARK
 		cycle_start_time = MPI_Wtime();
@@ -583,8 +701,6 @@ if (sim.Kess_source_gravity==1)
 			for (x.first(); x.test(); x.next())
       {
 				T00hom += source(x);
-        cout<<"pi: "<<pi_k(x)<<endl;
-
       }
 			parallel.sum<Real>(T00hom);
 			T00hom /= (Real) numpts3d;
@@ -759,9 +875,6 @@ if (sim.Kess_source_gravity==1)
 		// power spectra
 		if (pkcount < sim.num_pk && 1. / a < sim.z_pk[pkcount] + 1.)
 		{
-      check_field(  pi_k, Hconf(a, fourpiG, cosmo) , " H pi_k", numpts3d);
-      check_field( zeta_half, 1. , "zeta", numpts3d);
-      check_field( phi , 1. , "Phi", numpts3d);
 
 
 			COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
