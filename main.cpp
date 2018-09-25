@@ -543,8 +543,6 @@ int norm_kFT_squared = 0.;
        // if(x.coord(0)==32 && x.coord(1)==12 && x.coord(2)==32) cout<<"zeta_half: "<<zeta_half(x)<<endl;
 		}
 
-
-
     //****************************
     //****PRINTING AVERAGE OVER TIME
     //****************************
@@ -553,7 +551,6 @@ int norm_kFT_squared = 0.;
     avg_zeta =average(  zeta_half,1., numpts3d ) ;
     avg_phi =average(  phi , 1., numpts3d ) ;
 
-
     COUT << scientific << setprecision(8);
     // if(parallel.isRoot())
     // {
@@ -561,8 +558,6 @@ int norm_kFT_squared = 0.;
     out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_phi<<endl;
 
     // }
-
-
 
     //****************************
     //****PRINTING REAL SPACE INFO
@@ -876,7 +871,9 @@ if (sim.Kess_source_gravity==1)
 		if (pkcount < sim.num_pk && 1. / a < sim.z_pk[pkcount] + 1.)
 		{
 
-
+      check_field(  pi_k, Hconf(a, fourpiG, cosmo) , " H pi_k", numpts3d);
+      check_field( zeta_half, 1. , "zeta", numpts3d);
+      check_field( phi , 1. , "Phi", numpts3d);
 			COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
 #ifdef CHECK_B
