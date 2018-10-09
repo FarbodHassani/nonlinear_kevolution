@@ -462,8 +462,8 @@ int main(int argc, char **argv)
 //INITIAL CONDITION
 for (x.first(); x.test(); x.next())
   {
-    zeta_half(x)=0.;
-    pi_k(x)=0.;
+    zeta_half(x)=0.0;
+    pi_k(x)=0.0;
     //\Phi(n-1) = \Phi(old) and \Phi(n) which will be updated in this loops
     // Just note that in the first 2-3 steps it does not work since we
   }
@@ -477,31 +477,43 @@ for (x.first(); x.test(); x.next())
   FILE* Result_avg;
   FILE* Result_real;
   FILE* Result_fourier;
+  FILE* Result_max;
+
 
   char filename_avg[60];
   char filename_real[60];
   char filename_fourier[60];
+  char filename_max[60];
 
 
   snprintf(filename_avg, sizeof(filename_avg),"./output/Result_avg.txt");
   snprintf(filename_real, sizeof(filename_real),"./output/Result_real.txt");
   snprintf(filename_fourier, sizeof(filename_fourier),"./output/Result_fourier.txt");
+  snprintf(filename_max, sizeof(filename_max),"./output/Results_max.txt");
 
   // ofstream out(filename_avg,ios::out);
   ofstream out_avg(filename_avg,ios::out);
   ofstream out_real(filename_real,ios::out);
   ofstream out_fourier(filename_fourier,ios::out);
+  ofstream out_max(filename_max,ios::out);
 
 
   Result_avg=fopen(filename_avg,"w");
   Result_real=fopen(filename_real,"w");
   Result_fourier=fopen(filename_fourier,"w");
+  Result_max=fopen(filename_max,"w");
 
 
   out_avg<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
   out_avg<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_avg<<"### initial time = "<< tau <<endl;
   out_avg<<"### 1- tau\t2- average(H pi_k)\t3- average (zeta)\t 4- average (phi)   " <<endl;
+
+
+  out_max<<"### The result of the maximum over time \n### d tau = "<< dtau<<endl;
+  out_max<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
+  out_max<<"### initial time = "<< tau <<endl;
+  out_max<<"### 1- tau\t2- max(H pi_k)\t3- max (zeta)\t 4- max (phi)   " <<endl;
 
 
   out_real<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
@@ -520,6 +532,10 @@ double avg_pi = 0.;
 double avg_zeta = 0.;
 double avg_phi = 0.;
 
+double max_pi = 0.;
+double max_zeta = 0.;
+double max_phi = 0.;
+
 int norm_kFT_squared = 0.;
 
 
@@ -535,6 +551,8 @@ int norm_kFT_squared = 0.;
 	//Kessence
 	for (x.first(); x.test(); x.next())
 		{
+
+      // cout<<"tau: "<<tau<<" z: "<<1./(a) -1.<<endl;
       //\Phi(n-1) = \Phi(old) and \Phi(n) which will be updated in this loops
       // Just note that in the first 2-3 steps it does not work since we
 			phi_old(x) =phi(x);
@@ -551,11 +569,17 @@ int norm_kFT_squared = 0.;
     avg_zeta =average(  zeta_half,1., numpts3d ) ;
     avg_phi =average(  phi , 1., numpts3d ) ;
 
+    max_pi =maximum(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+    max_zeta =maximum(  zeta_half,1., numpts3d ) ;
+    max_phi =maximum(  phi , 1., numpts3d ) ;
+
     COUT << scientific << setprecision(8);
     // if(parallel.isRoot())
     // {
       // fprintf(Result_avg,"\n %20.20e %20.20e ", tau, avg ) ;
     out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_phi<<endl;
+
+      out_max<<setw(9) << tau <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<endl;
 
     // }
 

@@ -351,6 +351,38 @@ return hom * constant;
 // cout.flags(f);
 }
 
+
+// Printing out Maximum
+template <class FieldType>
+double maximum(Field<FieldType> & field, double constant , long n3)
+{
+Site x(field.lattice());
+ios::fmtflags f(cout.flags());
+double max = 0., hom = 0., sum = 0., temp;
+for(x.first(); x.test(); x.next())
+{
+temp = field(x);
+hom += temp;
+sum += fabs(temp);
+if(fabs(temp) >= max)
+{
+max = fabs(temp);
+}
+}
+parallel.max(max);
+parallel.sum(sum);
+parallel.sum(hom);
+sum /= n3;
+hom /= n3;
+return max * constant;
+// COUT << scientific << setprecision(6);
+// COUT << message
+// << setw(17) << field_name
+// << " Max = " << setw(9) << max * constant
+// << " hom = " << setw(9) << hom * constant
+// << endl;
+// cout.flags(f);
+}
 			//////////////////////////
 			// Update K-essence field (pi)
 			//////////////////////////
@@ -381,6 +413,7 @@ return hom * constant;
             //pi Updating which is linear by definition
             //*****************************************
             pi_k(x) = Coeff1 * ( pi_k(x)  + dtau * ( zeta_half(x)- Hcon * pi_k(x)/2. + psi_half ) ); //  pi_k(n+1) = pi_k(n) + pi'_k(n+1/2) dtau
+
             //*************************************************************************************
 			    }
 			}
@@ -497,23 +530,44 @@ return hom * constant;
           //***************************************
           // zeta(n+1/2) = zeta(n-1/2) + zeta'(n): FULL EQUATIONS
           //***************************************
-          zeta_half(x) =         1./(1. -  3. * Hcon * w  * dtau/2.
-                  -  non_linearity * (1. - cs2) *  Laplacian_pi * dtau/2.)   * ( zeta_half(x) + dtau * (
-          /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_half(x)/2. /*+ cs2 * psi */) /*- C2 * pi_k(x)
-          /*Linear(4,5)*/        //+ 3. * cs2 * phi_prime + cs2 * Laplacian_pi
-          /*Non-linear terms*/   + non_linearity * (
+
+          zeta_half(x) =         (1./(1. -  3. * Hcon * w  * dtau/2.) )
+                // /*  -  non_linearity * (1. - cs2) *  Laplacian_pi * dtau/2. ) */
+                                  * ( zeta_half(x) + dtau * (
+          /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_half(x)/2. + 1.e-3 * Laplacian_pi /*+ cs2 * psi */) /*- C2 * pi_k(x)
+          /*Linear(4,5)*/        //+ 3. * cs2 * phi_prime
+          /*Non-linear terms*/   + 1.* non_linearity * (
           /*Non-linear(1,2)*/    //- cs2 * (phi(x) - psi) * Laplacian_pi
           /*Non-linear(3)  */    //- 3. * cs2 * Hcon * (1. + w) * pi_k(x) * Laplacian_pi
         // /*Non-linear(3)  */       + (1. /*- cs2*/) * (zeta_half(x) ) * Laplacian_pi
            /*Non-linear(5,6,7)*/  //- cs2 * Gradphi_Gradpi
                                  /*+ Gradpsi_Gradpi */
-                                  - (2. + 3. * w  ) *  Hcon/2. * Gradpi_Gradpi
+                                  - 1. * (2. + 3. * w  ) *  Hcon/2. * Gradpi_Gradpi
           // /*Non-linear(8)  */    + 2. * (1. /*- cs2*/) * GradZeta_Gradpi
         /*Non-linear Higher order 9:*/   //- (1. -cs2)/2. * Gradi_nablai_pi_Grad_pi_squared
 
                                                     )
                                                       )
                                       );
+        //
+        //   zeta_half(x) =         1./(1. -  3. * Hcon * w  * dtau/2.)
+        //         // /*  -  non_linearity * (1. - cs2) *  Laplacian_pi * dtau/2. ) */
+        //                           * ( zeta_half(x) + dtau * (
+        //   /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_half(x)/2. /*+ cs2 * psi */) /*- C2 * pi_k(x)
+        //   /*Linear(4,5)*/        //+ 3. * cs2 * phi_prime + cs2 * Laplacian_pi
+        //   /*Non-linear terms*/   + 1.* non_linearity * (
+        //   /*Non-linear(1,2)*/    //- cs2 * (phi(x) - psi) * Laplacian_pi
+        //   /*Non-linear(3)  */    //- 3. * cs2 * Hcon * (1. + w) * pi_k(x) * Laplacian_pi
+        // // /*Non-linear(3)  */       + (1. /*- cs2*/) * (zeta_half(x) ) * Laplacian_pi
+        //    /*Non-linear(5,6,7)*/  //- cs2 * Gradphi_Gradpi
+        //                          /*+ Gradpsi_Gradpi */
+        //                           - (2. + 3. * w  ) *  Hcon/2. * Gradpi_Gradpi
+        //   // /*Non-linear(8)  */    + 2. * (1. /*- cs2*/) * GradZeta_Gradpi
+        // /*Non-linear Higher order 9:*/   //- (1. -cs2)/2. * Gradi_nablai_pi_Grad_pi_squared
+        //
+        //                                             )
+        //                                               )
+        //                               );
 
   //         zeta_half(x) =         C1 * ( zeta_half(x) + dtau * (
   //         /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)
